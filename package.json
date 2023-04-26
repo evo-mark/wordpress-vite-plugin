@@ -1,29 +1,26 @@
 {
-    "name": "laravel-vite-plugin",
-    "version": "0.7.4",
-    "description": "Laravel plugin for Vite.",
+    "name": "wordpress-vite-plugin",
+    "version": "0.7.5",
+    "description": "Wordpress plugin for Vite.",
     "keywords": [
-        "laravel",
+        "wordpress",
         "vite",
         "vite-plugin"
     ],
-    "homepage": "https://github.com/laravel/vite-plugin",
+    "homepage": "https://github.com/southcoastweb/wordpress-vite-plugin",
     "repository": {
         "type": "git",
-        "url": "https://github.com/laravel/vite-plugin"
+        "url": "https://github.com/southcoastweb/wordpress-vite-plugin"
     },
     "license": "MIT",
     "author": "Laravel",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "files": [
-        "/dist",
-        "/inertia-helpers"
+        "/dist"
     ],
     "scripts": {
-        "build": "npm run build-plugin && npm run build-inertia-helpers",
-        "build-plugin": "rm -rf dist && tsc && cp src/dev-server-index.html dist/",
-        "build-inertia-helpers": "rm -rf inertia-helpers && tsc --project tsconfig.inertia-helpers.json",
+        "prod": "rm -rf dist && tsc && cp src/dev-server-index.html dist/",
         "lint": "eslint --ext .ts ./src ./tests",
         "test": "vitest run"
     },
