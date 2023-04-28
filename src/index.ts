@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import externalGlobals from "rollup-plugin-external-globals";
+import wpGlobals from "./wpGlobals";
 import { AddressInfo } from "node:net";
 import path from "node:path";
 import colors from "picocolors";
@@ -105,15 +107,23 @@ export const refreshPaths = [
  * @param config - A config object or relative path(s) of the scripts to be compiled.
  */
 export function wordpress(
-    config: PluginConfig
+    config: PluginConfig,
+    ...params: any
 ): [WordpressPlugin, ...Plugin[]] {
     const pluginConfig = resolvePluginConfig(config);
+
     if (fs.existsSync(pluginConfig.publicDirectory) === false) {
         fs.mkdirSync(pluginConfig.publicDirectory, { recursive: true });
     }
 
+    const globalsPlugin: Plugin = {
+        ...externalGlobals(wpGlobals()),
+        apply: "build",
+    };
+
     return [
         resolveWordpressPlugin(pluginConfig),
+        globalsPlugin,
         ...(resolveFullReloadConfig(pluginConfig) as Plugin[]),
     ];
 }
