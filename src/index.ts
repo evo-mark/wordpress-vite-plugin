@@ -17,14 +17,9 @@ import fullReload, {
 
 interface PluginConfig {
     /**
-     * Type of Wordpress env
-     */
-    type?: "theme" | "plugin";
-
-    /**
      * The name of the Wordpress plugin or theme
      */
-    namespace?: string;
+    namespace: string;
 
     /**
      * The path or paths of the entry points to compile.
@@ -37,6 +32,11 @@ interface PluginConfig {
      * @default 'public'
      */
     publicDirectory?: string;
+
+    /**
+     * Build options for Vite
+     */
+    emptyOutDir?: boolean;
 
     /**
      * The public subdirectory where compiled assets should be written.
@@ -105,7 +105,7 @@ export const refreshPaths = [
  * @param config - A config object or relative path(s) of the scripts to be compiled.
  */
 export function wordpress(
-    config: string | string[] | PluginConfig
+    config: PluginConfig
 ): [WordpressPlugin, ...Plugin[]] {
     const pluginConfig = resolvePluginConfig(config);
     if (fs.existsSync(pluginConfig.publicDirectory) === false) {
@@ -137,7 +137,6 @@ function resolveWordpressPlugin(
         config: (userConfig, { command, mode }) => {
             const ssr = !!userConfig.build?.ssr;
             const env = loadEnv(mode, userConfig.envDir || process.cwd(), "");
-            const assetUrl = env.ASSET_URL ?? "";
             const serverConfig =
                 command === "serve"
                     ? resolveEnvironmentServerConfig(env)
@@ -146,13 +145,10 @@ function resolveWordpressPlugin(
             ensureCommandShouldRunInEnvironment(command, env);
 
             return {
-                base:
-                    userConfig.base ??
-                    (command === "build"
-                        ? resolveBase(pluginConfig, assetUrl)
-                        : ""),
+                base: userConfig.base ?? (command === "build" ? "./" : ""),
                 publicDir: userConfig.publicDir ?? false,
                 build: {
+                    emptyOutDir: pluginConfig.emptyOutDir ?? true,
                     manifest: userConfig.build?.manifest ?? !ssr,
                     outDir:
                         userConfig.build?.outDir ??
@@ -250,20 +246,9 @@ function resolveWordpressPlugin(
                             `\n  ${colors.blue(
                                 `${colors.bold(
                                     "WORDPRESS"
-                                )} ${laravelVersion()}`
+                                )} ${wordpressVersion()}`
                             )}  ${colors.dim("plugin")} ${colors.bold(
                                 `v${pluginVersion()}`
-                            )}`
-                        );
-                        server.config.logger.info("");
-                        server.config.logger.info(
-                            `  ${colors.green("➜")}  ${colors.bold(
-                                "APP_URL"
-                            )}: ${colors.cyan(
-                                appUrl.replace(
-                                    /:(\d+)/,
-                                    (_, port) => `:${colors.bold(port)}`
-                                )
                             )}`
                         );
                     }, 100);
@@ -330,18 +315,16 @@ function ensureCommandShouldRunInEnvironment(
 /**
  * The version of Laravel being run.
  */
-function laravelVersion(): string {
+function wordpressVersion(): string {
     try {
-        const composer = JSON.parse(
-            fs.readFileSync("composer.lock").toString()
-        );
-
-        return (
-            composer.packages?.find(
-                (composerPackage: { name: string }) =>
-                    composerPackage.name === "laravel/framework"
-            )?.version ?? ""
-        );
+        const versionPath = path.resolve("../../../wp-includes/version.php");
+        const versionFile = fs.readFileSync(versionPath, "utf-8");
+        const versionMatch = versionFile.match(/^(?:\$wp_version = )(.+?);$/m);
+        let version;
+        if (versionMatch && Array.isArray(versionMatch)) {
+            version = versionMatch[1].replace(/['"]/g, "");
+        }
+        return version || "";
     } catch {
         return "";
     }
@@ -363,21 +346,31 @@ function pluginVersion(): string {
 /**
  * Convert the users configuration into a standard structure with defaults.
  */
-function resolvePluginConfig(
-    config: string | string[] | PluginConfig
-): Required<PluginConfig> {
+function resolvePluginConfig(config: PluginConfig): Required<PluginConfig> {
     if (typeof config === "undefined") {
         throw new Error("wordpress-vite-plugin: missing configuration.");
     }
 
-    if (typeof config === "string" || Array.isArray(config)) {
-        config = { input: config, ssr: config };
+    if (typeof config !== "object" || Array.isArray(config) === true) {
+        throw new Error(
+            "wordpress-vite-plugin: configuration must be an object."
+        );
+    }
+
+    if (typeof config.namespace === "undefined") {
+        throw new Error(
+            'wordpress-vite-plugin: missing configuration for "namespace"'
+        );
     }
 
     if (typeof config.input === "undefined") {
         throw new Error(
             'wordpress-vite-plugin: missing configuration for "input".'
         );
+    }
+
+    if (config.ssr === "undefined") {
+        config.ssr = config.input;
     }
 
     if (typeof config.publicDirectory === "string") {
@@ -416,21 +409,15 @@ function resolvePluginConfig(
         config.refresh = [{ paths: refreshPaths }];
     }
 
-    const typeRegex = new RegExp(path.sep + "themes" + path.sep);
-    const defaultType =
-        config.type ?? typeRegex.test(process.cwd()) ? "theme" : "plugin";
-    const folder = process.cwd().split(path.sep).pop();
-    const namespace = config.namespace ?? `${defaultType}-${folder}`;
-
     const defaultPublic = path.resolve(
-        `${process.cwd()}/../../uploads/scw-vite-hmr/${namespace}`
+        `${process.cwd()}/../../uploads/scw-vite-hmr/${config.namespace}`
     );
 
     return {
-        type: config.type ?? "theme",
-        namespace: namespace,
+        namespace: config.namespace,
         input: config.input,
         publicDirectory: config.publicDirectory ?? defaultPublic,
+        emptyOutDir: config.emptyOutDir ?? true,
         buildDirectory: config.buildDirectory ?? "build",
         ssr: config.ssr ?? config.input,
         ssrOutputDirectory: config.ssrOutputDirectory ?? "bootstrap/ssr",
