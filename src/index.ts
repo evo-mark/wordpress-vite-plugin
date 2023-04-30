@@ -93,6 +93,7 @@ type DevServerUrl = `${"http" | "https"}://${string}:${number}`;
 
 let exitHandlersBound = false;
 
+// TODO: update these for Wordpress projects
 export const refreshPaths = [
     "app/View/Components/**",
     "resources/views/**",
@@ -107,8 +108,7 @@ export const refreshPaths = [
  * @param config - A config object or relative path(s) of the scripts to be compiled.
  */
 export function wordpress(
-    config: PluginConfig,
-    ...params: any
+    config: PluginConfig
 ): [WordpressPlugin, ...Plugin[]] {
     const pluginConfig = resolvePluginConfig(config);
 

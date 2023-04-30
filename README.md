@@ -9,7 +9,7 @@
 <p align="center">
   <img src="https://img.shields.io/npm/dm/wordpress-vite-plugin.svg" alt="Downloads"></a>
   <a href="https://www.npmjs.com/package/wordpress-vite-plugin"><img src="https://img.shields.io/npm/v/wordpress-vite-plugin.svg" alt="Version"></a>
-  <a href="https://github.com/craigrileyuk/wordpress-vite-plugin/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/wordpress-vite-plugin.svg" alt="License"></a>
+  <a href="https://github.com/southcoastweb/wordpress-vite-plugin/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/wordpress-vite-plugin.svg" alt="License"></a>
 </p>
 
 # Wordpress Vite Plugin
