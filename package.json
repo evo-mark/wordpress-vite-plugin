@@ -1,6 +1,6 @@
 {
     "name": "wordpress-vite-plugin",
-    "version": "0.7.5",
+    "version": "0.1.0",
     "description": "Wordpress plugin for Vite.",
     "keywords": [
         "wordpress",
@@ -13,7 +13,7 @@
         "url": "https://github.com/southcoastweb/wordpress-vite-plugin"
     },
     "license": "MIT",
-    "author": "Laravel",
+    "author": "southcoastweb",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "files": [
@@ -21,8 +21,8 @@
     ],
     "scripts": {
         "prod": "rm -rf dist && tsc && cp src/dev-server-index.html dist/",
-        "lint": "eslint --ext .ts ./src ./tests",
-        "test": "vitest run"
+        "lint": "eslint --ext .ts ./src",
+        "prepublishOnly": "npm run lint && npm run prod"
     },
     "devDependencies": {
         "@types/node": "^18.11.9",
@@ -31,8 +31,7 @@
         "eslint": "^8.14.0",
         "rollup-plugin-external-globals": "^0.7.3",
         "typescript": "^4.6.4",
-        "vite": "^4.0.0",
-        "vitest": "^0.25.2"
+        "vite": "^4.0.0"
     },
     "peerDependencies": {
         "vite": "^3.0.0 || ^4.0.0"
