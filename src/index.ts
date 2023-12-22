@@ -427,18 +427,6 @@ function resolvePluginConfig(config: PluginConfig): Required<PluginConfig> {
 }
 
 /**
- * Resolve the Vite base option from the configuration.
- */
-function resolveBase(config: Required<PluginConfig>, assetUrl: string): string {
-    return (
-        assetUrl +
-        (!assetUrl.endsWith("/") ? "/" : "") +
-        config.buildDirectory +
-        "/"
-    );
-}
-
-/**
  * Resolve the Vite input path from the configuration.
  */
 function resolveInput(
