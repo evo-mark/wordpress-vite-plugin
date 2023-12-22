@@ -1,13 +1,14 @@
 {
     "compilerOptions": {
         "outDir": "./dist",
-        "target": "ES2019",
-        "module": "commonjs",
-        "moduleResolution": "node",
+        "target": "ES2020",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
         "resolveJsonModule": true,
         "strict": true,
         "declaration": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true
     },
     "include": [
         "./src/index.ts"

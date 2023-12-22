@@ -1,4 +1,4 @@
-import type { ModuleNameMap } from "rollup-plugin-external-globals";
+import externalGlobals from "rollup-plugin-external-globals";
 
 /**
  * Given a kebab-case string, returns a new camelCase string.
@@ -10,7 +10,7 @@ function camelCaseDash(str: string): string {
     return str.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
 }
 
-export default function wp_globals(): ModuleNameMap {
+function wp_globals() {
     const wpModules = [
         "a11y",
         "annotations",
@@ -81,3 +81,5 @@ export default function wp_globals(): ModuleNameMap {
         ),
     };
 }
+
+export default externalGlobals(wp_globals());

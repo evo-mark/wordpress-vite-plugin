@@ -1,8 +1,8 @@
 import fs from "node:fs";
-import externalGlobals from "rollup-plugin-external-globals";
-import wpGlobals from "./wpGlobals";
+import wpGlobals from "./wpGlobals.js";
+import { fileURLToPath } from "node:url";
 import { AddressInfo } from "node:net";
-import path from "node:path";
+import { join, resolve } from "node:path";
 import colors from "picocolors";
 import {
     Plugin,
@@ -93,14 +93,7 @@ type DevServerUrl = `${"http" | "https"}://${string}:${number}`;
 
 let exitHandlersBound = false;
 
-// TODO: update these for Wordpress projects
-export const refreshPaths = [
-    "app/View/Components/**",
-    "resources/views/**",
-    "resources/lang/**",
-    "lang/**",
-    "routes/**",
-];
+export const refreshPaths = ["resources/views/**"];
 
 /**
  * Wordpress plugin for Vite.
@@ -117,7 +110,7 @@ export function wordpress(
     }
 
     const globalsPlugin: Plugin = {
-        ...externalGlobals(wpGlobals()),
+        ...wpGlobals,
         apply: "build",
     };
 
@@ -136,6 +129,7 @@ function resolveWordpressPlugin(
 ): WordpressPlugin {
     let viteDevServerUrl: DevServerUrl;
     let resolvedConfig: ResolvedConfig;
+    let userConfig: UserConfig;
 
     const defaultAliases: Record<string, string> = {
         "@": "/resources/js",
@@ -144,7 +138,8 @@ function resolveWordpressPlugin(
     return {
         name: "wordpress",
         enforce: "post",
-        config: (userConfig, { command, mode }) => {
+        config: (config, { command, mode }) => {
+            userConfig = config;
             const ssr = !!userConfig.build?.ssr;
             const env = loadEnv(mode, userConfig.envDir || process.cwd(), "");
             const serverConfig =
@@ -159,7 +154,12 @@ function resolveWordpressPlugin(
                 publicDir: userConfig.publicDir ?? false,
                 build: {
                     emptyOutDir: pluginConfig.emptyOutDir ?? true,
-                    manifest: userConfig.build?.manifest ?? !ssr,
+                    manifest:
+                        userConfig.build?.manifest ??
+                        (ssr ? false : "manifest.json"),
+                    ssrManifest:
+                        userConfig.build?.ssrManifest ??
+                        (ssr ? "ssr-manifest.json" : false),
                     outDir:
                         userConfig.build?.outDir ??
                         resolveOutDir(pluginConfig, ssr),
@@ -186,16 +186,6 @@ function resolveWordpressPlugin(
                                             ...(userConfig.server?.hmr === true
                                                 ? {}
                                                 : userConfig.server?.hmr),
-                                        },
-                              https:
-                                  userConfig.server?.https === false
-                                      ? false
-                                      : {
-                                            ...serverConfig.https,
-                                            ...(userConfig.server?.https ===
-                                            true
-                                                ? {}
-                                                : userConfig.server?.https),
                                         },
                           }
                         : undefined),
@@ -288,10 +278,7 @@ function resolveWordpressPlugin(
                         res.end(
                             fs
                                 .readFileSync(
-                                    path.join(
-                                        __dirname,
-                                        "dev-server-index.html"
-                                    )
+                                    join(dirname(), "dev-server-index.html")
                                 )
                                 .toString()
                                 .replace(/{{ APP_URL }}/g, appUrl)
@@ -327,7 +314,7 @@ function ensureCommandShouldRunInEnvironment(
  */
 function wordpressVersion(): string {
     try {
-        const versionPath = path.resolve("../../../wp-includes/version.php");
+        const versionPath = resolve("../../../wp-includes/version.php");
         const versionFile = fs.readFileSync(versionPath, "utf-8");
         const versionMatch = versionFile.match(/^(?:\$wp_version = )(.+?);$/m);
         let version;
@@ -346,7 +333,7 @@ function wordpressVersion(): string {
 function pluginVersion(): string {
     try {
         return JSON.parse(
-            fs.readFileSync(path.join(__dirname, "../package.json")).toString()
+            fs.readFileSync(join(dirname(), "../package.json")).toString()
         )?.version;
     } catch {
         return "";
@@ -419,7 +406,7 @@ function resolvePluginConfig(config: PluginConfig): Required<PluginConfig> {
         config.refresh = [{ paths: refreshPaths }];
     }
 
-    const defaultPublic = path.resolve(
+    const defaultPublic = resolve(
         `${process.cwd()}/../../uploads/scw-vite-hmr/${config.namespace}`
     );
 
@@ -434,7 +421,7 @@ function resolvePluginConfig(config: PluginConfig): Required<PluginConfig> {
         refresh: config.refresh ?? false,
         hotFile:
             config.hotFile ??
-            path.join(config.publicDirectory ?? defaultPublic, "hot"),
+            join(config.publicDirectory ?? defaultPublic, "hot"),
         transformOnServe: config.transformOnServe ?? ((code) => code),
     };
 }
@@ -476,7 +463,7 @@ function resolveOutDir(
         return config.ssrOutputDirectory;
     }
 
-    return path.join(config.publicDirectory, config.buildDirectory);
+    return join(config.publicDirectory, config.buildDirectory);
 }
 
 function resolveFullReloadConfig({
@@ -634,4 +621,11 @@ function resolveHostFromEnv(env: Record<string, string>): string | undefined {
     } catch {
         return;
     }
+}
+
+/**
+ * The directory of the current file.
+ */
+function dirname(): string {
+    return fileURLToPath(new URL(".", import.meta.url));
 }
