@@ -59,6 +59,8 @@ interface PluginConfig {
      */
     ssr?: string | string[];
 
+    ssrExternal: boolean;
+
     /**
      * The directory where the SSR bundle should be written.
      *
@@ -205,7 +207,9 @@ function resolveWordpressPlugin(
                           },
                 },
                 ssr: {
-                    noExternal: noExternalInertiaHelpers(userConfig),
+                    noExternal: pluginConfig.ssrExternal
+                        ? noExternalInertiaHelpers(userConfig)
+                        : true,
                 },
             };
         },
@@ -419,11 +423,11 @@ function resolvePluginConfig(config: PluginConfig): Required<PluginConfig> {
         emptyOutDir: config.emptyOutDir ?? true,
         buildDirectory: config.buildDirectory ?? "build",
         ssr: config.ssr ?? config.input,
-        ssrOutputDirectory: config.ssrOutputDirectory ?? join(publicDirectory, "ssr"),
+        ssrOutputDirectory:
+            config.ssrOutputDirectory ?? join(publicDirectory, "ssr"),
+        ssrExternal: config.ssrExternal ?? false,
         refresh: config.refresh ?? false,
-        hotFile:
-            config.hotFile ??
-            join(publicDirectory, "hot"),
+        hotFile: config.hotFile ?? join(publicDirectory, "hot"),
         transformOnServe: config.transformOnServe ?? ((code) => code),
     };
 }
