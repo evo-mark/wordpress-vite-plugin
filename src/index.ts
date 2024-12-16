@@ -140,7 +140,7 @@ function resolveWordpressPlugin(
     return {
         name: "wordpress",
         enforce: "post",
-        config: (config, { command, mode }) => {
+        config: (config, { command, mode, isSsrBuild }) => {
             userConfig = config;
             const ssr = !!userConfig.build?.ssr;
             const env = loadEnv(mode, userConfig.envDir || process.cwd(), "");
@@ -169,6 +169,11 @@ function resolveWordpressPlugin(
                         input:
                             userConfig.build?.rollupOptions?.input ??
                             resolveInput(pluginConfig, ssr),
+                        output: {
+                            entryFileNames: isSsrBuild
+                                ? "[name].mjs"
+                                : "[name].js",
+                        },
                     },
                     assetsInlineLimit: userConfig.build?.assetsInlineLimit ?? 0,
                 },
