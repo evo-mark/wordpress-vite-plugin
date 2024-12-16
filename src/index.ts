@@ -410,18 +410,20 @@ function resolvePluginConfig(config: PluginConfig): Required<PluginConfig> {
         `${process.cwd()}/../../uploads/scw-vite-hmr/${config.namespace}`
     );
 
+    const publicDirectory = config.publicDirectory ?? defaultPublic;
+
     return {
         namespace: config.namespace,
         input: config.input,
-        publicDirectory: config.publicDirectory ?? defaultPublic,
+        publicDirectory,
         emptyOutDir: config.emptyOutDir ?? true,
         buildDirectory: config.buildDirectory ?? "build",
         ssr: config.ssr ?? config.input,
-        ssrOutputDirectory: config.ssrOutputDirectory ?? "bootstrap/ssr",
+        ssrOutputDirectory: config.ssrOutputDirectory ?? join(publicDirectory, "ssr"),
         refresh: config.refresh ?? false,
         hotFile:
             config.hotFile ??
-            join(config.publicDirectory ?? defaultPublic, "hot"),
+            join(publicDirectory, "hot"),
         transformOnServe: config.transformOnServe ?? ((code) => code),
     };
 }
