@@ -172,7 +172,7 @@ function resolveWordpressPlugin(
                         output: {
                             entryFileNames: isSsrBuild
                                 ? "[name].mjs"
-                                : "[name].js",
+                                : "assets/[name]-[hash].js",
                         },
                     },
                     assetsInlineLimit: userConfig.build?.assetsInlineLimit ?? 0,
