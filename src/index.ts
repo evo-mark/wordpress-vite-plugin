@@ -180,7 +180,7 @@ function resolveWordpressPlugin(
                 server: {
                     origin:
                         userConfig.server?.origin ??
-                        "__wordpress_vite_placeholder__",
+                        "http://__wordpress_vite_placeholder__.test",
                     ...(serverConfig
                         ? {
                               host:
@@ -224,7 +224,7 @@ function resolveWordpressPlugin(
         transform(code) {
             if (resolvedConfig.command === "serve") {
                 code = code.replace(
-                    /__wordpress_vite_placeholder__/g,
+                    /http:\/\/__wordpress_vite_placeholder__\.test/g,
                     viteDevServerUrl
                 );
 
@@ -319,7 +319,7 @@ function ensureCommandShouldRunInEnvironment(
 }
 
 /**
- * The version of Laravel being run.
+ * The version of Wordpress being run.
  */
 function wordpressVersion(): string {
     try {
