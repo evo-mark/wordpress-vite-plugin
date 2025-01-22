@@ -196,6 +196,13 @@ function resolveWordpressPlugin(
                                         },
                           }
                         : undefined),
+                    cors: userConfig.server?.cors ?? {
+                        origin: userConfig.server?.origin ?? [
+                            /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/,
+                            ...(env.APP_URL ? [env.APP_URL] : []),
+                            /^https?:\/\/.*\.test(:\d+)?$/,
+                        ],
+                    },
                 },
                 resolve: {
                     alias: Array.isArray(userConfig.resolve?.alias)
