@@ -1,5 +1,9 @@
 import externalGlobals from "rollup-plugin-external-globals";
 
+interface GlobalsConfig {
+    localReact ?: boolean;
+}
+
 /**
  * Given a kebab-case string, returns a new camelCase string.
  *
@@ -10,7 +14,7 @@ function camelCaseDash(str: string): string {
     return str.replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
 }
 
-function wp_globals() {
+function wp_globals(config: GlobalsConfig) {
     const wpModules = [
         "a11y",
         "annotations",
@@ -61,15 +65,17 @@ function wp_globals() {
         "wordcount",
     ];
 
-    const otherModules = {
+    const otherModules: Record<string, string> = {
         jquery: "jQuery",
         tinymce: "tinymce",
         moment: "moment",
-        react: "React",
-        "react-dom": "ReactDOM",
         backbone: "Backbone",
         lodash: "lodash",
     };
+    if (config.localReact !== true) {
+        otherModules.react = "React";
+        otherModules["react-dom"] = "ReactDOM";
+    }
 
     return {
         ...otherModules,
@@ -82,4 +88,6 @@ function wp_globals() {
     };
 }
 
-export default externalGlobals(wp_globals());
+export default function (config: GlobalsConfig = {}) {
+    return externalGlobals(wp_globals(config));
+}

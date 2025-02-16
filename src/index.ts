@@ -59,7 +59,7 @@ interface PluginConfig {
      */
     ssr?: string | string[];
 
-    ssrExternal: boolean;
+    ssrExternal?: boolean;
 
     /**
      * The directory where the SSR bundle should be written.
@@ -80,6 +80,16 @@ interface PluginConfig {
      * Transform the code while serving.
      */
     transformOnServe?: (code: string, url: DevServerUrl) => string;
+
+     /**
+     * Enable using local React instance
+     */
+     localReact?: boolean;
+
+    /**
+     * Create a separate vendor file
+     */
+    splitVendor?: boolean;
 }
 
 interface RefreshConfig {
@@ -89,6 +99,7 @@ interface RefreshConfig {
 
 interface WordpressPlugin extends Plugin {
     config: (config: UserConfig, env: ConfigEnv) => UserConfig;
+    name: string;
 }
 
 type DevServerUrl = `${"http" | "https"}://${string}:${number}`;
@@ -112,7 +123,7 @@ export function wordpress(
     }
 
     const globalsPlugin: Plugin = {
-        ...wpGlobals,
+        ...wpGlobals({ localReact: pluginConfig.localReact }),
         apply: "build",
     };
 
@@ -151,6 +162,27 @@ function resolveWordpressPlugin(
 
             ensureCommandShouldRunInEnvironment(command, env);
 
+            /**
+             * On SSR build, we want to maintain an .mjs extension so it can run in locations without
+             * a package.json file marking it as a "module".
+             *
+             * On normal builds, default Vite code-splitting was causing issues on Inertia builds, and
+             * so the "splitVendor" option is a workaround for that.
+             */
+            const rollupOptionsOutput = isSsrBuild
+                ? {
+                    entryFileNames: "[name].mjs",
+                }
+                : Object.assign(userConfig.build?.rollupOptions?.output ?? {}, pluginConfig.splitVendor
+                    ? {
+                        manualChunks: function manualChunks(id: string) {
+                            if (id.includes("node_modules")) {
+                                return "vendor";
+                            }
+                        },
+                    }
+                    : undefined);
+
             return {
                 base: userConfig.base ?? (command === "build" ? "./" : ""),
                 publicDir: userConfig.publicDir ?? false,
@@ -169,11 +201,7 @@ function resolveWordpressPlugin(
                         input:
                             userConfig.build?.rollupOptions?.input ??
                             resolveInput(pluginConfig, ssr),
-                        output: {
-                            entryFileNames: isSsrBuild
-                                ? "[name].mjs"
-                                : "assets/[name]-[hash].js",
-                        },
+                        output: rollupOptionsOutput,
                     },
                     assetsInlineLimit: userConfig.build?.assetsInlineLimit ?? 0,
                 },
@@ -228,7 +256,7 @@ function resolveWordpressPlugin(
         configResolved(config) {
             resolvedConfig = config;
         },
-        transform(code) {
+        transform(code: string) {
             if (resolvedConfig.command === "serve") {
                 code = code.replace(
                     /http:\/\/__wordpress_vite_placeholder__\.test/g,
@@ -441,6 +469,8 @@ function resolvePluginConfig(config: PluginConfig): Required<PluginConfig> {
         refresh: config.refresh ?? false,
         hotFile: config.hotFile ?? join(publicDirectory, "hot"),
         transformOnServe: config.transformOnServe ?? ((code) => code),
+        splitVendor: config.splitVendor ?? false,
+        localReact: config.localReact ?? false,
     };
 }
 
