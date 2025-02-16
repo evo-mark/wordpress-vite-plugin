@@ -1,4 +1,10 @@
-import fs from "node:fs";
+import {
+    existsSync,
+    mkdirSync,
+    rmSync,
+    writeFileSync,
+    readFileSync,
+} from "node:fs";
 import wpGlobals from "./wpGlobals.js";
 import { fileURLToPath } from "node:url";
 import { AddressInfo } from "node:net";
@@ -81,10 +87,10 @@ interface PluginConfig {
      */
     transformOnServe?: (code: string, url: DevServerUrl) => string;
 
-     /**
-     * Enable using local React instance
+    /**
+     * Enable using local React instance rather than the one on the window
      */
-     localReact?: boolean;
+    localReact?: boolean;
 
     /**
      * Create a separate vendor file
@@ -118,14 +124,14 @@ export function wordpress(
 ): [WordpressPlugin, ...Plugin[]] {
     const pluginConfig = resolvePluginConfig(config);
 
-    if (fs.existsSync(pluginConfig.publicDirectory) === false) {
-        fs.mkdirSync(pluginConfig.publicDirectory, { recursive: true });
+    if (existsSync(pluginConfig.publicDirectory) === false) {
+        mkdirSync(pluginConfig.publicDirectory, { recursive: true });
     }
 
-    const globalsPlugin: Plugin = {
+    const globalsPlugin = {
         ...wpGlobals({ localReact: pluginConfig.localReact }),
         apply: "build",
-    };
+    } as Plugin;
 
     return [
         resolveWordpressPlugin(pluginConfig),
@@ -171,17 +177,22 @@ function resolveWordpressPlugin(
              */
             const rollupOptionsOutput = isSsrBuild
                 ? {
-                    entryFileNames: "[name].mjs",
-                }
-                : Object.assign(userConfig.build?.rollupOptions?.output ?? {}, pluginConfig.splitVendor
-                    ? {
-                        manualChunks: function manualChunks(id: string) {
-                            if (id.includes("node_modules")) {
-                                return "vendor";
+                      entryFileNames: "[name].mjs",
+                  }
+                : Object.assign(
+                      userConfig.build?.rollupOptions?.output ?? {},
+                      pluginConfig.splitVendor
+                          ? {
+                                manualChunks: function manualChunks(
+                                    id: string
+                                ) {
+                                    if (id.includes("node_modules")) {
+                                        return "vendor";
+                                    }
+                                },
                             }
-                        },
-                    }
-                    : undefined);
+                          : undefined
+                  );
 
             return {
                 base: userConfig.base ?? (command === "build" ? "./" : ""),
@@ -283,7 +294,7 @@ function resolveWordpressPlugin(
                         address,
                         server.config
                     );
-                    fs.writeFileSync(pluginConfig.hotFile, viteDevServerUrl);
+                    writeFileSync(pluginConfig.hotFile, viteDevServerUrl);
 
                     setTimeout(() => {
                         server.config.logger.info(
@@ -301,8 +312,8 @@ function resolveWordpressPlugin(
 
             if (!exitHandlersBound) {
                 const clean = () => {
-                    if (fs.existsSync(pluginConfig.hotFile)) {
-                        fs.rmSync(pluginConfig.hotFile);
+                    if (existsSync(pluginConfig.hotFile)) {
+                        rmSync(pluginConfig.hotFile);
                     }
                 };
 
@@ -320,10 +331,9 @@ function resolveWordpressPlugin(
                         res.statusCode = 404;
 
                         res.end(
-                            fs
-                                .readFileSync(
-                                    join(dirname(), "dev-server-index.html")
-                                )
+                            readFileSync(
+                                join(dirname(), "dev-server-index.html")
+                            )
                                 .toString()
                                 .replace(/{{ APP_URL }}/g, appUrl)
                         );
@@ -359,7 +369,7 @@ function ensureCommandShouldRunInEnvironment(
 function wordpressVersion(): string {
     try {
         const versionPath = resolve("../../../wp-includes/version.php");
-        const versionFile = fs.readFileSync(versionPath, "utf-8");
+        const versionFile = readFileSync(versionPath, "utf-8");
         const versionMatch = versionFile.match(/^(?:\$wp_version = )(.+?);$/m);
         let version;
         if (versionMatch && Array.isArray(versionMatch)) {
@@ -377,7 +387,7 @@ function wordpressVersion(): string {
 function pluginVersion(): string {
     try {
         return JSON.parse(
-            fs.readFileSync(join(dirname(), "../package.json")).toString()
+            readFileSync(join(dirname(), "../package.json")).toString()
         )?.version;
     } catch {
         return "";
@@ -622,8 +632,8 @@ function resolveEnvironmentServerConfig(env: Record<string, string>):
     }
 
     if (
-        !fs.existsSync(env.VITE_DEV_SERVER_KEY) ||
-        !fs.existsSync(env.VITE_DEV_SERVER_CERT)
+        !existsSync(env.VITE_DEV_SERVER_KEY) ||
+        !existsSync(env.VITE_DEV_SERVER_CERT)
     ) {
         throw Error(
             `Unable to find the certificate files specified in your environment. Ensure you have correctly configured VITE_DEV_SERVER_KEY: [${env.VITE_DEV_SERVER_KEY}] and VITE_DEV_SERVER_CERT: [${env.VITE_DEV_SERVER_CERT}].`
@@ -642,8 +652,8 @@ function resolveEnvironmentServerConfig(env: Record<string, string>):
         hmr: { host },
         host,
         https: {
-            key: fs.readFileSync(env.VITE_DEV_SERVER_KEY),
-            cert: fs.readFileSync(env.VITE_DEV_SERVER_CERT),
+            key: readFileSync(env.VITE_DEV_SERVER_KEY),
+            cert: readFileSync(env.VITE_DEV_SERVER_CERT),
         },
     };
 }
