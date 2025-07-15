@@ -10,7 +10,7 @@
     "homepage": "https://github.com/evo-mark/wordpress-vite-plugin",
     "repository": {
         "type": "git",
-        "url": "https://github.com/evo-mark/wordpress-vite-plugin"
+        "url": "git+https://github.com/evo-mark/wordpress-vite-plugin.git"
     },
     "license": "MIT",
     "author": "evoMark",
@@ -26,6 +26,7 @@
         "prepublishOnly": "npm run lint && npm run prod"
     },
     "devDependencies": {
+        "@eslint/js": "^9.31.0",
         "@types/node": "^24.0.14",
         "@typescript-eslint/eslint-plugin": "^8.37.0",
         "@typescript-eslint/parser": "^8.37.0",
